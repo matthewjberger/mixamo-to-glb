@@ -1,0 +1,8 @@
+/target
+dist/
+vendor/
+logs/
+plugins/engine/*.wasm
+plugins/app/*.wasm
+THIRD_PARTY_LICENSES.html
+*.glb
