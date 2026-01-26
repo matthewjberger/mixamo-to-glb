@@ -1,5 +1,7 @@
 use chrono::Local;
-use nightshade::ecs::animation::components::{AnimationClip, AnimationProperty, AnimationSamplerOutput};
+use nightshade::ecs::animation::components::{
+    AnimationClip, AnimationProperty, AnimationSamplerOutput,
+};
 use nightshade::ecs::prefab::import_gltf_from_path;
 use nightshade::ecs::prefab::resources::mesh_cache_insert;
 use nightshade::ecs::prefab::{GltfSkin, Prefab, PrefabNode};
@@ -63,7 +65,8 @@ impl CliConverter {
     fn log(&mut self, message: &str) {
         let timestamp = Local::now().format("%H:%M:%S").to_string();
         println!("[{}] {}", timestamp, message);
-        self.report_lines.push(format!("[{}] {}", timestamp, message));
+        self.report_lines
+            .push(format!("[{}] {}", timestamp, message));
     }
 
     fn import_path(&mut self, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
@@ -76,7 +79,10 @@ impl CliConverter {
             path.to_path_buf()
         };
 
-        self.log(&format!("Scanning for FBX files in: {}", source_path.display()));
+        self.log(&format!(
+            "Scanning for FBX files in: {}",
+            source_path.display()
+        ));
         self.scan_for_fbx_files(&source_path);
 
         if self.fbx_files.is_empty() {
@@ -125,10 +131,17 @@ impl CliConverter {
     fn scan_for_fbx_files(&mut self, dir: &Path) {
         for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
-            if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("fbx")) {
+            if path
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("fbx"))
+            {
                 let metadata = std::fs::metadata(path).ok();
                 let size_bytes = metadata.map_or(0, |m| m.len());
-                let name = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                let name = path
+                    .file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
 
                 let is_model = size_bytes > 1_000_000;
 
@@ -149,7 +162,8 @@ impl CliConverter {
             }
         }
 
-        self.fbx_files.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+        self.fbx_files
+            .sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
     }
 
     fn load_fbx_files(&mut self) {
@@ -177,7 +191,10 @@ impl CliConverter {
                         }
                     }
                     Err(error) => {
-                        self.log(&format!("Failed to load model {}: {}", file_info.name, error));
+                        self.log(&format!(
+                            "Failed to load model {}: {}",
+                            file_info.name, error
+                        ));
                     }
                 }
             } else {
@@ -187,8 +204,12 @@ impl CliConverter {
                         if !clips.is_empty() {
                             self.log(&format!("  Clips: {}", clips.len()));
                             for clip in &clips {
-                                self.log(&format!("    {} - {} channels, {:.2}s duration",
-                                    clip.name, clip.channels.len(), clip.duration));
+                                self.log(&format!(
+                                    "    {} - {} channels, {:.2}s duration",
+                                    clip.name,
+                                    clip.channels.len(),
+                                    clip.duration
+                                ));
                             }
                             self.loaded_animations.push(LoadedAnimation {
                                 name: file_info.name.clone(),
@@ -197,7 +218,10 @@ impl CliConverter {
                         }
                     }
                     Err(error) => {
-                        self.log(&format!("Failed to load animation {}: {}", file_info.name, error));
+                        self.log(&format!(
+                            "Failed to load animation {}: {}",
+                            file_info.name, error
+                        ));
                     }
                 }
             }
@@ -215,7 +239,11 @@ impl CliConverter {
         let mut all_animations: Vec<AnimationClip> = Vec::new();
         for file_info in &self.fbx_files {
             if !file_info.is_model && file_info.selected {
-                if let Some(loaded_anim) = self.loaded_animations.iter().find(|a| a.name == file_info.name) {
+                if let Some(loaded_anim) = self
+                    .loaded_animations
+                    .iter()
+                    .find(|a| a.name == file_info.name)
+                {
                     for mut clip in loaded_anim.clips.clone() {
                         if self.strip_root_motion {
                             clip.channels.retain(|channel| {
@@ -233,7 +261,11 @@ impl CliConverter {
 
         let glb_data = self.build_glb_for_model(0, &all_animations)?;
         std::fs::write(output_path, &glb_data)?;
-        self.log(&format!("Wrote {} bytes to {}", glb_data.len(), output_path.display()));
+        self.log(&format!(
+            "Wrote {} bytes to {}",
+            glb_data.len(),
+            output_path.display()
+        ));
 
         self.write_report_for_model(output_path, 0, &all_animations)?;
 
@@ -260,18 +292,30 @@ impl CliConverter {
                     } else {
                         mesh.vertices.len()
                     };
-                    self.log(&format!("    Mesh '{}': {} vertices, {} indices",
-                        name, vertex_count, mesh.indices.len()));
+                    self.log(&format!(
+                        "    Mesh '{}': {} vertices, {} indices",
+                        name,
+                        vertex_count,
+                        mesh.indices.len()
+                    ));
                 }
 
                 for (index, skin) in result.skins.iter().enumerate() {
-                    self.log(&format!("    Skin {}: {} joints, {} IBMs",
-                        index, skin.joints.len(), skin.inverse_bind_matrices.len()));
+                    self.log(&format!(
+                        "    Skin {}: {} joints, {} IBMs",
+                        index,
+                        skin.joints.len(),
+                        skin.inverse_bind_matrices.len()
+                    ));
                 }
 
                 for anim in &result.animations {
-                    self.log(&format!("    Animation '{}': {} channels, {:.2}s",
-                        anim.name, anim.channels.len(), anim.duration));
+                    self.log(&format!(
+                        "    Animation '{}': {} channels, {:.2}s",
+                        anim.name,
+                        anim.channels.len(),
+                        anim.duration
+                    ));
                 }
 
                 if result.meshes.is_empty() {
@@ -289,7 +333,11 @@ impl CliConverter {
         }
     }
 
-    fn build_glb_for_model(&mut self, model_index: usize, animations: &[AnimationClip]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    fn build_glb_for_model(
+        &mut self,
+        model_index: usize,
+        animations: &[AnimationClip],
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let model = LoadedModel {
             name: self.loaded_models[model_index].name.clone(),
             prefab: self.loaded_models[model_index].prefab.clone(),
@@ -301,12 +349,21 @@ impl CliConverter {
         self.build_glb_internal(&model, animations)
     }
 
-    fn write_report_for_model(&self, output_path: &Path, model_index: usize, animations: &[AnimationClip]) -> Result<(), Box<dyn std::error::Error>> {
+    fn write_report_for_model(
+        &self,
+        output_path: &Path,
+        model_index: usize,
+        animations: &[AnimationClip],
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let model = &self.loaded_models[model_index];
         self.write_report(output_path, model, animations)
     }
 
-    fn build_glb_internal(&mut self, model: &LoadedModel, animations: &[AnimationClip]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    fn build_glb_internal(
+        &mut self,
+        model: &LoadedModel,
+        animations: &[AnimationClip],
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         use gltf_json as json;
         use json::validation::USize64;
 
@@ -317,6 +374,11 @@ impl CliConverter {
         let mut meshes: Vec<json::Mesh> = Vec::new();
         let mut gltf_nodes: Vec<json::Node> = Vec::new();
         let mut skins: Vec<json::Skin> = Vec::new();
+        let mut images: Vec<json::Image> = Vec::new();
+        let mut gltf_textures: Vec<json::Texture> = Vec::new();
+        let mut materials: Vec<json::Material> = Vec::new();
+        let mut samplers: Vec<json::texture::Sampler> = Vec::new();
+        let mut texture_name_to_index: HashMap<String, u32> = HashMap::new();
 
         let mut node_index_map: HashMap<usize, usize> = HashMap::new();
 
@@ -377,7 +439,12 @@ impl CliConverter {
         let mut next_index = 0usize;
 
         for root_node in &model.prefab.root_nodes {
-            assign_indices(root_node, &mut node_index_map, &mut next_index, &mut node_infos);
+            assign_indices(
+                root_node,
+                &mut node_index_map,
+                &mut next_index,
+                &mut node_infos,
+            );
         }
 
         node_infos.sort_by_key(|info| info.gltf_index);
@@ -393,17 +460,172 @@ impl CliConverter {
                 children: if info.child_gltf_indices.is_empty() {
                     None
                 } else {
-                    Some(info.child_gltf_indices.iter().map(|i| json::Index::new(*i as u32)).collect())
+                    Some(
+                        info.child_gltf_indices
+                            .iter()
+                            .map(|i| json::Index::new(*i as u32))
+                            .collect(),
+                    )
                 },
                 ..Default::default()
             });
         }
 
-        self.log(&format!("Built {} nodes from prefab hierarchy", gltf_nodes.len()));
+        self.log(&format!(
+            "Built {} nodes from prefab hierarchy",
+            gltf_nodes.len()
+        ));
         self.log(&format!("Node index mapping: {:?}", node_index_map));
 
+        if !model.textures.is_empty() {
+            samplers.push(json::texture::Sampler {
+                mag_filter: Some(json::validation::Checked::Valid(
+                    json::texture::MagFilter::Linear,
+                )),
+                min_filter: Some(json::validation::Checked::Valid(
+                    json::texture::MinFilter::LinearMipmapLinear,
+                )),
+                wrap_s: json::validation::Checked::Valid(json::texture::WrappingMode::Repeat),
+                wrap_t: json::validation::Checked::Valid(json::texture::WrappingMode::Repeat),
+                name: None,
+                extensions: None,
+                extras: Default::default(),
+            });
+        }
+
+        for (texture_name, (rgba_data, width, height)) in &model.textures {
+            self.log(&format!(
+                "Exporting texture: {} ({}x{})",
+                texture_name, width, height
+            ));
+
+            let png_data = {
+                let mut png_buffer = Vec::new();
+                let mut cursor = std::io::Cursor::new(&mut png_buffer);
+                let encoder = image::codecs::png::PngEncoder::new(&mut cursor);
+                image::ImageEncoder::write_image(
+                    encoder,
+                    rgba_data,
+                    *width,
+                    *height,
+                    image::ExtendedColorType::Rgba8,
+                )?;
+                png_buffer
+            };
+
+            while buffer_data.len() % 4 != 0 {
+                buffer_data.push(0);
+            }
+
+            let image_start = buffer_data.len();
+            buffer_data.extend_from_slice(&png_data);
+            let image_length = buffer_data.len() - image_start;
+
+            buffer_views.push(json::buffer::View {
+                buffer: json::Index::new(0),
+                byte_offset: Some(USize64::from(image_start)),
+                byte_length: USize64::from(image_length),
+                byte_stride: None,
+                target: None,
+                name: None,
+                extensions: None,
+                extras: Default::default(),
+            });
+
+            let image_index = images.len() as u32;
+            images.push(json::Image {
+                buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
+                mime_type: Some(json::image::MimeType("image/png".to_string())),
+                uri: None,
+                name: Some(texture_name.clone()),
+                extensions: None,
+                extras: Default::default(),
+            });
+
+            let texture_index = gltf_textures.len() as u32;
+            gltf_textures.push(json::Texture {
+                sampler: Some(json::Index::new(0)),
+                source: json::Index::new(image_index),
+                name: Some(texture_name.clone()),
+                extensions: None,
+                extras: Default::default(),
+            });
+
+            texture_name_to_index.insert(texture_name.clone(), texture_index);
+        }
+
+        let default_material_index = if !model.textures.is_empty() {
+            let base_color_texture = model
+                .textures
+                .keys()
+                .next()
+                .map(|name| texture_name_to_index.get(name).copied())
+                .flatten();
+
+            materials.push(json::Material {
+                name: Some("DefaultMaterial".to_string()),
+                pbr_metallic_roughness: json::material::PbrMetallicRoughness {
+                    base_color_factor: json::material::PbrBaseColorFactor([1.0, 1.0, 1.0, 1.0]),
+                    base_color_texture: base_color_texture.map(|idx| json::texture::Info {
+                        index: json::Index::new(idx),
+                        tex_coord: 0,
+                        extensions: None,
+                        extras: Default::default(),
+                    }),
+                    metallic_factor: json::material::StrengthFactor(0.0),
+                    roughness_factor: json::material::StrengthFactor(0.5),
+                    metallic_roughness_texture: None,
+                    extensions: None,
+                    extras: Default::default(),
+                },
+                alpha_mode: json::validation::Checked::Valid(json::material::AlphaMode::Opaque),
+                alpha_cutoff: None,
+                double_sided: false,
+                normal_texture: None,
+                occlusion_texture: None,
+                emissive_texture: None,
+                emissive_factor: json::material::EmissiveFactor([0.0, 0.0, 0.0]),
+                extensions: None,
+                extras: Default::default(),
+            });
+            Some(0u32)
+        } else {
+            materials.push(json::Material {
+                name: Some("DefaultMaterial".to_string()),
+                pbr_metallic_roughness: json::material::PbrMetallicRoughness {
+                    base_color_factor: json::material::PbrBaseColorFactor([0.8, 0.8, 0.8, 1.0]),
+                    base_color_texture: None,
+                    metallic_factor: json::material::StrengthFactor(0.0),
+                    roughness_factor: json::material::StrengthFactor(0.5),
+                    metallic_roughness_texture: None,
+                    extensions: None,
+                    extras: Default::default(),
+                },
+                alpha_mode: json::validation::Checked::Valid(json::material::AlphaMode::Opaque),
+                alpha_cutoff: None,
+                double_sided: false,
+                normal_texture: None,
+                occlusion_texture: None,
+                emissive_texture: None,
+                emissive_factor: json::material::EmissiveFactor([0.0, 0.0, 0.0]),
+                extensions: None,
+                extras: Default::default(),
+            });
+            Some(0u32)
+        };
+
+        self.log(&format!(
+            "Created {} textures and {} materials",
+            gltf_textures.len(),
+            materials.len()
+        ));
+
         for (skin_idx, skin) in model.skins.iter().enumerate() {
-            self.log(&format!("Processing skin {} with {} joints", skin_idx, skin.joints.len()));
+            self.log(&format!(
+                "Processing skin {} with {} joints",
+                skin_idx,
+                skin.joints.len()
+            ));
 
             let ibm_start = buffer_data.len();
             for ibm in &skin.inverse_bind_matrices {
@@ -431,9 +653,9 @@ impl CliConverter {
                 buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                 byte_offset: Some(USize64::from(0usize)),
                 count: USize64::from(skin.inverse_bind_matrices.len()),
-                component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                    json::accessor::ComponentType::F32,
-                )),
+                component_type: json::validation::Checked::Valid(
+                    json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                ),
                 type_: json::validation::Checked::Valid(json::accessor::Type::Mat4),
                 min: None,
                 max: None,
@@ -444,13 +666,33 @@ impl CliConverter {
                 extras: Default::default(),
             });
 
-            let joint_indices: Vec<json::Index<json::Node>> = skin.joints.iter()
-                .filter_map(|&joint_idx| {
-                    node_index_map.get(&joint_idx).map(|&gltf_idx| json::Index::new(gltf_idx as u32))
+            let mut unmapped_joints = 0;
+            let first_valid_node = node_index_map.values().next().copied().unwrap_or(0);
+
+            let joint_indices: Vec<json::Index<json::Node>> = skin
+                .joints
+                .iter()
+                .map(|&joint_idx| {
+                    if let Some(&gltf_idx) = node_index_map.get(&joint_idx) {
+                        json::Index::new(gltf_idx as u32)
+                    } else {
+                        unmapped_joints += 1;
+                        json::Index::new(first_valid_node as u32)
+                    }
                 })
                 .collect();
 
-            self.log(&format!("  Mapped {} of {} joints to glTF nodes", joint_indices.len(), skin.joints.len()));
+            if unmapped_joints > 0 {
+                self.log(&format!(
+                    "  WARNING: {} of {} joints could not be mapped to glTF nodes",
+                    unmapped_joints,
+                    skin.joints.len()
+                ));
+            }
+            self.log(&format!(
+                "  Mapped {} joints to glTF nodes",
+                joint_indices.len()
+            ));
 
             skins.push(json::Skin {
                 inverse_bind_matrices: Some(json::Index::new(ibm_accessor_index)),
@@ -463,23 +705,28 @@ impl CliConverter {
         }
 
         for (mesh_name, mesh) in &model.meshes {
-            self.log(&format!("Processing mesh: {} ({} vertices, {} indices)",
-                mesh_name, mesh.vertices.len(), mesh.indices.len()));
+            self.log(&format!(
+                "Processing mesh: {} ({} vertices, {} indices)",
+                mesh_name,
+                mesh.vertices.len(),
+                mesh.indices.len()
+            ));
 
             let has_skin = mesh.skin_data.is_some();
             self.log(&format!("  Has skin data: {}", has_skin));
 
             let (vertices_to_use, skinned_data) = if let Some(ref skin_data) = mesh.skin_data {
-                self.log(&format!("  Skinned vertices: {}", skin_data.skinned_vertices.len()));
+                self.log(&format!(
+                    "  Skinned vertices: {}",
+                    skin_data.skinned_vertices.len()
+                ));
                 (None, Some(skin_data))
             } else {
                 (Some(&mesh.vertices), None)
             };
 
-            let vertex_count = skinned_data.map_or_else(
-                || mesh.vertices.len(),
-                |sd| sd.skinned_vertices.len()
-            );
+            let vertex_count =
+                skinned_data.map_or_else(|| mesh.vertices.len(), |sd| sd.skinned_vertices.len());
 
             let positions_start = buffer_data.len();
             let mut min_pos = [f32::MAX; 3];
@@ -513,7 +760,9 @@ impl CliConverter {
                 byte_offset: Some(USize64::from(positions_start)),
                 byte_length: USize64::from(positions_length),
                 byte_stride: None,
-                target: Some(json::validation::Checked::Valid(json::buffer::Target::ArrayBuffer)),
+                target: Some(json::validation::Checked::Valid(
+                    json::buffer::Target::ArrayBuffer,
+                )),
                 name: None,
                 extensions: None,
                 extras: Default::default(),
@@ -524,12 +773,16 @@ impl CliConverter {
                 buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                 byte_offset: Some(USize64::from(0usize)),
                 count: USize64::from(vertex_count),
-                component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                    json::accessor::ComponentType::F32,
-                )),
+                component_type: json::validation::Checked::Valid(
+                    json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                ),
                 type_: json::validation::Checked::Valid(json::accessor::Type::Vec3),
-                min: Some(json::Value::Array(min_pos.iter().map(|v| json::Value::from(*v)).collect())),
-                max: Some(json::Value::Array(max_pos.iter().map(|v| json::Value::from(*v)).collect())),
+                min: Some(json::Value::Array(
+                    min_pos.iter().map(|v| json::Value::from(*v)).collect(),
+                )),
+                max: Some(json::Value::Array(
+                    max_pos.iter().map(|v| json::Value::from(*v)).collect(),
+                )),
                 name: None,
                 normalized: false,
                 sparse: None,
@@ -558,7 +811,9 @@ impl CliConverter {
                 byte_offset: Some(USize64::from(normals_start)),
                 byte_length: USize64::from(normals_length),
                 byte_stride: None,
-                target: Some(json::validation::Checked::Valid(json::buffer::Target::ArrayBuffer)),
+                target: Some(json::validation::Checked::Valid(
+                    json::buffer::Target::ArrayBuffer,
+                )),
                 name: None,
                 extensions: None,
                 extras: Default::default(),
@@ -569,9 +824,9 @@ impl CliConverter {
                 buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                 byte_offset: Some(USize64::from(0usize)),
                 count: USize64::from(vertex_count),
-                component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                    json::accessor::ComponentType::F32,
-                )),
+                component_type: json::validation::Checked::Valid(
+                    json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                ),
                 type_: json::validation::Checked::Valid(json::accessor::Type::Vec3),
                 min: None,
                 max: None,
@@ -601,7 +856,9 @@ impl CliConverter {
                 byte_offset: Some(USize64::from(texcoords_start)),
                 byte_length: USize64::from(texcoords_length),
                 byte_stride: None,
-                target: Some(json::validation::Checked::Valid(json::buffer::Target::ArrayBuffer)),
+                target: Some(json::validation::Checked::Valid(
+                    json::buffer::Target::ArrayBuffer,
+                )),
                 name: None,
                 extensions: None,
                 extras: Default::default(),
@@ -612,9 +869,9 @@ impl CliConverter {
                 buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                 byte_offset: Some(USize64::from(0usize)),
                 count: USize64::from(vertex_count),
-                component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                    json::accessor::ComponentType::F32,
-                )),
+                component_type: json::validation::Checked::Valid(
+                    json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                ),
                 type_: json::validation::Checked::Valid(json::accessor::Type::Vec2),
                 min: None,
                 max: None,
@@ -643,7 +900,9 @@ impl CliConverter {
                     byte_offset: Some(USize64::from(joints_start)),
                     byte_length: USize64::from(joints_length),
                     byte_stride: None,
-                    target: Some(json::validation::Checked::Valid(json::buffer::Target::ArrayBuffer)),
+                    target: Some(json::validation::Checked::Valid(
+                        json::buffer::Target::ArrayBuffer,
+                    )),
                     name: None,
                     extensions: None,
                     extras: Default::default(),
@@ -654,9 +913,9 @@ impl CliConverter {
                     buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                     byte_offset: Some(USize64::from(0usize)),
                     count: USize64::from(sd.skinned_vertices.len()),
-                    component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                        json::accessor::ComponentType::U16,
-                    )),
+                    component_type: json::validation::Checked::Valid(
+                        json::accessor::GenericComponentType(json::accessor::ComponentType::U16),
+                    ),
                     type_: json::validation::Checked::Valid(json::accessor::Type::Vec4),
                     min: None,
                     max: None,
@@ -681,7 +940,9 @@ impl CliConverter {
                     byte_offset: Some(USize64::from(weights_start)),
                     byte_length: USize64::from(weights_length),
                     byte_stride: None,
-                    target: Some(json::validation::Checked::Valid(json::buffer::Target::ArrayBuffer)),
+                    target: Some(json::validation::Checked::Valid(
+                        json::buffer::Target::ArrayBuffer,
+                    )),
                     name: None,
                     extensions: None,
                     extras: Default::default(),
@@ -692,9 +953,9 @@ impl CliConverter {
                     buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                     byte_offset: Some(USize64::from(0usize)),
                     count: USize64::from(sd.skinned_vertices.len()),
-                    component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                        json::accessor::ComponentType::F32,
-                    )),
+                    component_type: json::validation::Checked::Valid(
+                        json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                    ),
                     type_: json::validation::Checked::Valid(json::accessor::Type::Vec4),
                     min: None,
                     max: None,
@@ -717,7 +978,9 @@ impl CliConverter {
                 byte_offset: Some(USize64::from(indices_start)),
                 byte_length: USize64::from(indices_length),
                 byte_stride: None,
-                target: Some(json::validation::Checked::Valid(json::buffer::Target::ElementArrayBuffer)),
+                target: Some(json::validation::Checked::Valid(
+                    json::buffer::Target::ElementArrayBuffer,
+                )),
                 name: None,
                 extensions: None,
                 extras: Default::default(),
@@ -728,9 +991,9 @@ impl CliConverter {
                 buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                 byte_offset: Some(USize64::from(0usize)),
                 count: USize64::from(mesh.indices.len()),
-                component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                    json::accessor::ComponentType::U32,
-                )),
+                component_type: json::validation::Checked::Valid(
+                    json::accessor::GenericComponentType(json::accessor::ComponentType::U32),
+                ),
                 type_: json::validation::Checked::Valid(json::accessor::Type::Scalar),
                 min: None,
                 max: None,
@@ -772,7 +1035,7 @@ impl CliConverter {
                 primitives: vec![json::mesh::Primitive {
                     attributes,
                     indices: Some(json::Index::new(indices_accessor_index)),
-                    material: None,
+                    material: default_material_index.map(|idx| json::Index::new(idx)),
                     mode: json::validation::Checked::Valid(json::mesh::Mode::Triangles),
                     targets: None,
                     extensions: None,
@@ -798,23 +1061,47 @@ impl CliConverter {
                 ..Default::default()
             });
 
-            self.log(&format!("  Created mesh node at index {} with skin {:?}", mesh_node_index, skin_index));
+            self.log(&format!(
+                "  Created mesh node at index {} with skin {:?}",
+                mesh_node_index, skin_index
+            ));
         }
 
         let mut gltf_animations: Vec<json::Animation> = Vec::new();
 
+        let mut node_name_to_gltf_index: HashMap<String, usize> = HashMap::new();
+        for (gltf_idx, node) in gltf_nodes.iter().enumerate() {
+            if let Some(ref name) = node.name {
+                node_name_to_gltf_index.insert(name.clone(), gltf_idx);
+            }
+        }
+        self.log(&format!(
+            "Built node name map with {} entries",
+            node_name_to_gltf_index.len()
+        ));
+
         for anim in animations {
-            self.log(&format!("Processing animation: {} ({} channels)", anim.name, anim.channels.len()));
+            self.log(&format!(
+                "Processing animation: {} ({} channels)",
+                anim.name,
+                anim.channels.len()
+            ));
 
             let mut samplers: Vec<json::animation::Sampler> = Vec::new();
             let mut channels: Vec<json::animation::Channel> = Vec::new();
+            let mut unmapped_channels = 0;
 
             for channel in &anim.channels {
-                let target_node = node_index_map.get(&channel.target_node);
-                if target_node.is_none() {
+                let target_node_idx = if let Some(ref target_name) = channel.target_bone_name {
+                    node_name_to_gltf_index.get(target_name).copied()
+                } else {
+                    node_index_map.get(&channel.target_node).copied()
+                };
+
+                let Some(target_node_idx) = target_node_idx else {
+                    unmapped_channels += 1;
                     continue;
-                }
-                let target_node_idx = *target_node.unwrap();
+                };
 
                 let times_start = buffer_data.len();
                 for time in &channel.sampler.input {
@@ -841,9 +1128,9 @@ impl CliConverter {
                     buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                     byte_offset: Some(USize64::from(0usize)),
                     count: USize64::from(channel.sampler.input.len()),
-                    component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                        json::accessor::ComponentType::F32,
-                    )),
+                    component_type: json::validation::Checked::Valid(
+                        json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                    ),
                     type_: json::validation::Checked::Valid(json::accessor::Type::Scalar),
                     min: Some(json::Value::Array(vec![json::Value::from(min_time)])),
                     max: Some(json::Value::Array(vec![json::Value::from(max_time)])),
@@ -855,34 +1142,47 @@ impl CliConverter {
                 });
 
                 let values_start = buffer_data.len();
-                let (accessor_type, path, value_count) = match (&channel.target_property, &channel.sampler.output) {
-                    (AnimationProperty::Translation, AnimationSamplerOutput::Vec3(values)) => {
-                        for v in values {
-                            buffer_data.extend_from_slice(&v.x.to_le_bytes());
-                            buffer_data.extend_from_slice(&v.y.to_le_bytes());
-                            buffer_data.extend_from_slice(&v.z.to_le_bytes());
+                let (accessor_type, path, value_count) =
+                    match (&channel.target_property, &channel.sampler.output) {
+                        (AnimationProperty::Translation, AnimationSamplerOutput::Vec3(values)) => {
+                            for v in values {
+                                buffer_data.extend_from_slice(&v.x.to_le_bytes());
+                                buffer_data.extend_from_slice(&v.y.to_le_bytes());
+                                buffer_data.extend_from_slice(&v.z.to_le_bytes());
+                            }
+                            (
+                                json::accessor::Type::Vec3,
+                                json::animation::Property::Translation,
+                                values.len(),
+                            )
                         }
-                        (json::accessor::Type::Vec3, json::animation::Property::Translation, values.len())
-                    }
-                    (AnimationProperty::Rotation, AnimationSamplerOutput::Quat(values)) => {
-                        for q in values {
-                            buffer_data.extend_from_slice(&q.i.to_le_bytes());
-                            buffer_data.extend_from_slice(&q.j.to_le_bytes());
-                            buffer_data.extend_from_slice(&q.k.to_le_bytes());
-                            buffer_data.extend_from_slice(&q.w.to_le_bytes());
+                        (AnimationProperty::Rotation, AnimationSamplerOutput::Quat(values)) => {
+                            for q in values {
+                                buffer_data.extend_from_slice(&q.i.to_le_bytes());
+                                buffer_data.extend_from_slice(&q.j.to_le_bytes());
+                                buffer_data.extend_from_slice(&q.k.to_le_bytes());
+                                buffer_data.extend_from_slice(&q.w.to_le_bytes());
+                            }
+                            (
+                                json::accessor::Type::Vec4,
+                                json::animation::Property::Rotation,
+                                values.len(),
+                            )
                         }
-                        (json::accessor::Type::Vec4, json::animation::Property::Rotation, values.len())
-                    }
-                    (AnimationProperty::Scale, AnimationSamplerOutput::Vec3(values)) => {
-                        for v in values {
-                            buffer_data.extend_from_slice(&v.x.to_le_bytes());
-                            buffer_data.extend_from_slice(&v.y.to_le_bytes());
-                            buffer_data.extend_from_slice(&v.z.to_le_bytes());
+                        (AnimationProperty::Scale, AnimationSamplerOutput::Vec3(values)) => {
+                            for v in values {
+                                buffer_data.extend_from_slice(&v.x.to_le_bytes());
+                                buffer_data.extend_from_slice(&v.y.to_le_bytes());
+                                buffer_data.extend_from_slice(&v.z.to_le_bytes());
+                            }
+                            (
+                                json::accessor::Type::Vec3,
+                                json::animation::Property::Scale,
+                                values.len(),
+                            )
                         }
-                        (json::accessor::Type::Vec3, json::animation::Property::Scale, values.len())
-                    }
-                    _ => continue,
-                };
+                        _ => continue,
+                    };
                 let values_length = buffer_data.len() - values_start;
 
                 buffer_views.push(json::buffer::View {
@@ -901,9 +1201,9 @@ impl CliConverter {
                     buffer_view: Some(json::Index::new(buffer_views.len() as u32 - 1)),
                     byte_offset: Some(USize64::from(0usize)),
                     count: USize64::from(value_count),
-                    component_type: json::validation::Checked::Valid(json::accessor::GenericComponentType(
-                        json::accessor::ComponentType::F32,
-                    )),
+                    component_type: json::validation::Checked::Valid(
+                        json::accessor::GenericComponentType(json::accessor::ComponentType::F32),
+                    ),
                     type_: json::validation::Checked::Valid(accessor_type),
                     min: None,
                     max: None,
@@ -918,7 +1218,9 @@ impl CliConverter {
                 samplers.push(json::animation::Sampler {
                     input: json::Index::new(time_accessor_index),
                     output: json::Index::new(value_accessor_index),
-                    interpolation: json::validation::Checked::Valid(json::animation::Interpolation::Linear),
+                    interpolation: json::validation::Checked::Valid(
+                        json::animation::Interpolation::Linear,
+                    ),
                     extensions: None,
                     extras: Default::default(),
                 });
@@ -936,6 +1238,13 @@ impl CliConverter {
                 });
             }
 
+            if unmapped_channels > 0 {
+                self.log(&format!(
+                    "  WARNING: {} channels could not be mapped to nodes",
+                    unmapped_channels
+                ));
+            }
+
             if !channels.is_empty() {
                 gltf_animations.push(json::Animation {
                     name: Some(anim.name.clone()),
@@ -944,7 +1253,10 @@ impl CliConverter {
                     extensions: None,
                     extras: Default::default(),
                 });
-                self.log(&format!("  Added animation with {} channels", gltf_animations.last().unwrap().channels.len()));
+                self.log(&format!(
+                    "  Added animation with {} channels",
+                    gltf_animations.last().unwrap().channels.len()
+                ));
             }
         }
 
@@ -961,7 +1273,8 @@ impl CliConverter {
             .map(|i| json::Index::new(i as u32))
             .collect();
 
-        let all_root_nodes: Vec<json::Index<json::Node>> = root_nodes.into_iter()
+        let all_root_nodes: Vec<json::Index<json::Node>> = root_nodes
+            .into_iter()
             .chain(mesh_node_indices.into_iter())
             .collect();
 
@@ -980,6 +1293,10 @@ impl CliConverter {
                 extensions: None,
                 extras: Default::default(),
             }],
+            images,
+            samplers,
+            textures: gltf_textures,
+            materials,
             meshes,
             nodes: gltf_nodes,
             skins,
@@ -1025,13 +1342,21 @@ impl CliConverter {
         self.log(&format!("  Meshes: {}", root.meshes.len()));
         self.log(&format!("  Skins: {}", root.skins.len()));
         self.log(&format!("  Animations: {}", root.animations.len()));
+        self.log(&format!("  Images: {}", root.images.len()));
+        self.log(&format!("  Textures: {}", root.textures.len()));
+        self.log(&format!("  Materials: {}", root.materials.len()));
         self.log(&format!("  Accessors: {}", root.accessors.len()));
         self.log(&format!("  Buffer views: {}", root.buffer_views.len()));
 
         Ok(glb)
     }
 
-    fn write_report(&self, output_path: &Path, model: &LoadedModel, animations: &[AnimationClip]) -> Result<(), Box<dyn std::error::Error>> {
+    fn write_report(
+        &self,
+        output_path: &Path,
+        model: &LoadedModel,
+        animations: &[AnimationClip],
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let report_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("reports");
         std::fs::create_dir_all(&report_dir)?;
 
@@ -1040,35 +1365,63 @@ impl CliConverter {
         let report_path = report_dir.join(&report_name);
 
         let mut report = String::new();
-        report.push_str("================================================================================\n");
+        report.push_str(
+            "================================================================================\n",
+        );
         report.push_str("                     MIXAMO TO GLB CONVERSION REPORT\n");
-        report.push_str("================================================================================\n\n");
+        report.push_str(
+            "================================================================================\n\n",
+        );
 
-        report.push_str(&format!("Generated: {}\n", Local::now().format("%Y-%m-%d %H:%M:%S")));
+        report.push_str(&format!(
+            "Generated: {}\n",
+            Local::now().format("%Y-%m-%d %H:%M:%S")
+        ));
         report.push_str(&format!("Output: {}\n\n", output_path.display()));
 
-        report.push_str("--------------------------------------------------------------------------------\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n",
+        );
         report.push_str("                              SOURCE FILES\n");
-        report.push_str("--------------------------------------------------------------------------------\n\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n\n",
+        );
 
         report.push_str("Models:\n");
         for file in &self.fbx_files {
             if file.is_model {
-                report.push_str(&format!("  - {} ({} KB)\n", file.name, file.size_bytes / 1024));
+                report.push_str(&format!(
+                    "  - {} ({} KB)\n",
+                    file.name,
+                    file.size_bytes / 1024
+                ));
             }
         }
 
         report.push_str("\nAnimations:\n");
         for file in &self.fbx_files {
             if !file.is_model {
-                let status = if file.selected { "[INCLUDED]" } else { "[EXCLUDED]" };
-                report.push_str(&format!("  {} {} ({} KB)\n", status, file.name, file.size_bytes / 1024));
+                let status = if file.selected {
+                    "[INCLUDED]"
+                } else {
+                    "[EXCLUDED]"
+                };
+                report.push_str(&format!(
+                    "  {} {} ({} KB)\n",
+                    status,
+                    file.name,
+                    file.size_bytes / 1024
+                ));
             }
         }
 
-        report.push_str("\n--------------------------------------------------------------------------------\n");
+        report.push_str(
+            "\n--------------------------------------------------------------------------------\n",
+        );
         report.push_str("                              MODEL DETAILS\n");
-        report.push_str("--------------------------------------------------------------------------------\n\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n\n",
+        );
 
         report.push_str(&format!("Name: {}\n", model.name));
         report.push_str(&format!("Node Count: {}\n", model.node_count));
@@ -1080,9 +1433,16 @@ impl CliConverter {
         for (name, mesh) in &model.meshes {
             report.push_str(&format!("  {}:\n", name));
             report.push_str(&format!("    Vertices: {}\n", mesh.vertices.len()));
-            report.push_str(&format!("    Indices: {} ({} triangles)\n", mesh.indices.len(), mesh.indices.len() / 3));
+            report.push_str(&format!(
+                "    Indices: {} ({} triangles)\n",
+                mesh.indices.len(),
+                mesh.indices.len() / 3
+            ));
             if let Some(ref skin_data) = mesh.skin_data {
-                report.push_str(&format!("    Skinned: Yes ({} skinned vertices)\n", skin_data.skinned_vertices.len()));
+                report.push_str(&format!(
+                    "    Skinned: Yes ({} skinned vertices)\n",
+                    skin_data.skinned_vertices.len()
+                ));
                 if let Some(skin_idx) = skin_data.skin_index {
                     report.push_str(&format!("    Skin Index: {}\n", skin_idx));
                 }
@@ -1096,25 +1456,45 @@ impl CliConverter {
             report.push_str(&format!("  Skin {}:\n", idx));
             report.push_str(&format!("    Name: {:?}\n", skin.name));
             report.push_str(&format!("    Joints: {}\n", skin.joints.len()));
-            report.push_str(&format!("    Inverse Bind Matrices: {}\n", skin.inverse_bind_matrices.len()));
+            report.push_str(&format!(
+                "    Inverse Bind Matrices: {}\n",
+                skin.inverse_bind_matrices.len()
+            ));
         }
 
-        report.push_str("\n--------------------------------------------------------------------------------\n");
+        report.push_str(
+            "\n--------------------------------------------------------------------------------\n",
+        );
         report.push_str("                           PREFAB HIERARCHY\n");
-        report.push_str("--------------------------------------------------------------------------------\n\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n\n",
+        );
 
         fn write_node_tree(node: &PrefabNode, indent: usize, report: &mut String) {
             let prefix = "  ".repeat(indent);
-            let name = node.components.name.as_ref().map_or("<unnamed>", |n| n.0.as_str());
+            let name = node
+                .components
+                .name
+                .as_ref()
+                .map_or("<unnamed>", |n| n.0.as_str());
             let node_idx = node.node_index.map_or("N/A".to_string(), |i| i.to_string());
             report.push_str(&format!("{}[{}] {}\n", prefix, node_idx, name));
 
             let t = &node.local_transform.translation;
             let r = &node.local_transform.rotation;
             let s = &node.local_transform.scale;
-            report.push_str(&format!("{}  T: ({:.3}, {:.3}, {:.3})\n", prefix, t.x, t.y, t.z));
-            report.push_str(&format!("{}  R: ({:.3}, {:.3}, {:.3}, {:.3})\n", prefix, r.i, r.j, r.k, r.w));
-            report.push_str(&format!("{}  S: ({:.3}, {:.3}, {:.3})\n", prefix, s.x, s.y, s.z));
+            report.push_str(&format!(
+                "{}  T: ({:.3}, {:.3}, {:.3})\n",
+                prefix, t.x, t.y, t.z
+            ));
+            report.push_str(&format!(
+                "{}  R: ({:.3}, {:.3}, {:.3}, {:.3})\n",
+                prefix, r.i, r.j, r.k, r.w
+            ));
+            report.push_str(&format!(
+                "{}  S: ({:.3}, {:.3}, {:.3})\n",
+                prefix, s.x, s.y, s.z
+            ));
 
             for child in &node.children {
                 write_node_tree(child, indent + 1, report);
@@ -1125,11 +1505,18 @@ impl CliConverter {
             write_node_tree(root, 0, &mut report);
         }
 
-        report.push_str("\n--------------------------------------------------------------------------------\n");
+        report.push_str(
+            "\n--------------------------------------------------------------------------------\n",
+        );
         report.push_str("                           ANIMATION DETAILS\n");
-        report.push_str("--------------------------------------------------------------------------------\n\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n\n",
+        );
 
-        report.push_str(&format!("Total Animations Included: {}\n\n", animations.len()));
+        report.push_str(&format!(
+            "Total Animations Included: {}\n\n",
+            animations.len()
+        ));
 
         for anim in animations {
             report.push_str(&format!("Animation: {}\n", anim.name));
@@ -1152,18 +1539,26 @@ impl CliConverter {
             report.push_str("\n");
         }
 
-        report.push_str("--------------------------------------------------------------------------------\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n",
+        );
         report.push_str("                              CONSOLE LOG\n");
-        report.push_str("--------------------------------------------------------------------------------\n\n");
+        report.push_str(
+            "--------------------------------------------------------------------------------\n\n",
+        );
 
         for line in &self.report_lines {
             report.push_str(line);
             report.push_str("\n");
         }
 
-        report.push_str("\n================================================================================\n");
+        report.push_str(
+            "\n================================================================================\n",
+        );
         report.push_str("                              END OF REPORT\n");
-        report.push_str("================================================================================\n");
+        report.push_str(
+            "================================================================================\n",
+        );
 
         std::fs::write(&report_path, &report)?;
         println!("Report written to: {}", report_path.display());
@@ -1282,7 +1677,10 @@ impl MixamoConverter {
             path.to_path_buf()
         };
 
-        self.set_status(&format!("Scanning for FBX files in: {}", source_path.display()));
+        self.set_status(&format!(
+            "Scanning for FBX files in: {}",
+            source_path.display()
+        ));
         self.scan_for_fbx_files(&source_path);
 
         if self.fbx_files.is_empty() {
@@ -1291,7 +1689,10 @@ impl MixamoConverter {
             return;
         }
 
-        self.set_status(&format!("Found {} FBX files. Loading...", self.fbx_files.len()));
+        self.set_status(&format!(
+            "Found {} FBX files. Loading...",
+            self.fbx_files.len()
+        ));
         self.load_fbx_files();
 
         self.app_state = AppState::Ready;
@@ -1336,10 +1737,17 @@ impl MixamoConverter {
     fn scan_for_fbx_files(&mut self, dir: &Path) {
         for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
-            if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("fbx")) {
+            if path
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("fbx"))
+            {
                 let metadata = std::fs::metadata(path).ok();
                 let size_bytes = metadata.map_or(0, |m| m.len());
-                let name = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                let name = path
+                    .file_stem()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
 
                 let is_model = size_bytes > 1_000_000;
 
@@ -1360,7 +1768,8 @@ impl MixamoConverter {
             }
         }
 
-        self.fbx_files.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+        self.fbx_files
+            .sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
     }
 
     fn load_fbx_files(&mut self) {
@@ -1384,7 +1793,10 @@ impl MixamoConverter {
                         }
                     }
                     Err(error) => {
-                        self.log(&format!("Failed to load model {}: {}", file_info.name, error));
+                        self.log(&format!(
+                            "Failed to load model {}: {}",
+                            file_info.name, error
+                        ));
                     }
                 }
             } else {
@@ -1400,7 +1812,10 @@ impl MixamoConverter {
                         }
                     }
                     Err(error) => {
-                        self.log(&format!("Failed to load animation {}: {}", file_info.name, error));
+                        self.log(&format!(
+                            "Failed to load animation {}: {}",
+                            file_info.name, error
+                        ));
                     }
                 }
             }
@@ -1425,8 +1840,12 @@ impl MixamoConverter {
 
         let mut all_animations: Vec<AnimationClip> = Vec::new();
         for file_info in self.fbx_files.iter() {
-            if !file_info.is_model && file_info.selected
-                && let Some(loaded_anim) = self.loaded_animations.iter().find(|a| a.name == file_info.name)
+            if !file_info.is_model
+                && file_info.selected
+                && let Some(loaded_anim) = self
+                    .loaded_animations
+                    .iter()
+                    .find(|a| a.name == file_info.name)
             {
                 for mut clip in loaded_anim.clips.clone() {
                     if self.strip_root_motion {
@@ -1469,7 +1888,11 @@ impl MixamoConverter {
                 if let Err(e) = std::fs::write(output_path, &glb_data) {
                     self.set_status(&format!("Failed to write file: {}", e));
                 } else {
-                    self.set_status(&format!("Successfully exported {} bytes to: {}", glb_data.len(), output_path.display()));
+                    self.set_status(&format!(
+                        "Successfully exported {} bytes to: {}",
+                        glb_data.len(),
+                        output_path.display()
+                    ));
 
                     if let Err(e) = cli.write_report(output_path, &model, &all_animations) {
                         self.log(&format!("Failed to write report: {}", e));
@@ -1501,8 +1924,12 @@ impl MixamoConverter {
 
         match import_gltf_from_path(&glb_path) {
             Ok(result) => {
-                self.log(&format!("Loaded GLB: {} meshes, {} skins, {} animations",
-                    result.meshes.len(), result.skins.len(), result.animations.len()));
+                self.log(&format!(
+                    "Loaded GLB: {} meshes, {} skins, {} animations",
+                    result.meshes.len(),
+                    result.skins.len(),
+                    result.animations.len()
+                ));
 
                 for (name, mesh) in &result.meshes {
                     mesh_cache_insert(&mut world.resources.mesh_cache, name.clone(), mesh.clone());
@@ -1540,7 +1967,10 @@ impl MixamoConverter {
                     }
 
                     self.preview_entity = Some(entity);
-                    self.set_status(&format!("Loaded exported GLB with {} animations", result.animations.len()));
+                    self.set_status(&format!(
+                        "Loaded exported GLB with {} animations",
+                        result.animations.len()
+                    ));
                 } else {
                     self.set_status("Failed: No prefabs in exported GLB");
                 }
@@ -1572,7 +2002,8 @@ impl MixamoConverter {
             return;
         }
 
-        let default_name = self.loaded_models
+        let default_name = self
+            .loaded_models
             .get(self.selected_model_index.unwrap())
             .map(|m| format!("{}.glb", m.name))
             .unwrap_or_else(|| "export.glb".to_string());
@@ -1612,8 +2043,12 @@ impl MixamoConverter {
 
         let mut all_animations: Vec<AnimationClip> = Vec::new();
         for file_info in &self.fbx_files {
-            if !file_info.is_model && file_info.selected
-                && let Some(loaded_anim) = self.loaded_animations.iter().find(|a| a.name == file_info.name)
+            if !file_info.is_model
+                && file_info.selected
+                && let Some(loaded_anim) = self
+                    .loaded_animations
+                    .iter()
+                    .find(|a| a.name == file_info.name)
             {
                 for mut clip in loaded_anim.clips.clone() {
                     if self.strip_root_motion {
@@ -1691,123 +2126,131 @@ impl State for MixamoConverter {
             });
         });
 
-        egui::SidePanel::left("control_panel").min_width(350.0).show(ui_context, |ui| {
-            ui.heading("Import");
-            ui.horizontal(|ui| {
-                if ui.button("Import Zip...").clicked() {
-                    self.show_import_dialog();
-                }
-                if ui.button("Import Folder...").clicked() {
-                    self.show_folder_dialog();
-                }
-            });
-
-            ui.separator();
-
-            if self.app_state == AppState::Importing {
+        egui::SidePanel::left("control_panel")
+            .min_width(350.0)
+            .show(ui_context, |ui| {
+                ui.heading("Import");
                 ui.horizontal(|ui| {
-                    ui.spinner();
-                    ui.label("Importing...");
+                    if ui.button("Import Zip...").clicked() {
+                        self.show_import_dialog();
+                    }
+                    if ui.button("Import Folder...").clicked() {
+                        self.show_folder_dialog();
+                    }
                 });
-            }
 
-            if self.app_state == AppState::Exporting {
-                ui.horizontal(|ui| {
-                    ui.spinner();
-                    ui.label("Exporting...");
-                });
-            }
-
-            if !self.loaded_models.is_empty() {
                 ui.separator();
-                ui.heading("Models");
 
-                let mut model_changed = false;
-                for (index, model) in self.loaded_models.iter().enumerate() {
-                    let selected = self.selected_model_index == Some(index);
-                    if ui.selectable_label(selected, &model.name).clicked() {
-                        self.selected_model_index = Some(index);
-                        model_changed = true;
+                if self.app_state == AppState::Importing {
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label("Importing...");
+                    });
+                }
+
+                if self.app_state == AppState::Exporting {
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label("Exporting...");
+                    });
+                }
+
+                if !self.loaded_models.is_empty() {
+                    ui.separator();
+                    ui.heading("Models");
+
+                    let mut model_changed = false;
+                    for (index, model) in self.loaded_models.iter().enumerate() {
+                        let selected = self.selected_model_index == Some(index);
+                        if ui.selectable_label(selected, &model.name).clicked() {
+                            self.selected_model_index = Some(index);
+                            model_changed = true;
+                        }
+                    }
+
+                    if model_changed {
+                        self.spawn_preview(world);
                     }
                 }
 
-                if model_changed {
+                if !self.loaded_animations.is_empty() {
+                    ui.separator();
+                    ui.heading("Animations");
+                    ui.checkbox(&mut self.strip_root_motion, "Strip Root Motion");
+
+                    ui.horizontal(|ui| {
+                        if ui.button("Select All").clicked() {
+                            for file_info in &mut self.fbx_files {
+                                if !file_info.is_model {
+                                    file_info.selected = true;
+                                }
+                            }
+                        }
+                        if ui.button("Select None").clicked() {
+                            for file_info in &mut self.fbx_files {
+                                if !file_info.is_model {
+                                    file_info.selected = false;
+                                }
+                            }
+                        }
+                    });
+
+                    egui::ScrollArea::vertical()
+                        .max_height(300.0)
+                        .show(ui, |ui| {
+                            for file_info in &mut self.fbx_files {
+                                if !file_info.is_model {
+                                    ui.checkbox(&mut file_info.selected, &file_info.name);
+                                }
+                            }
+                        });
+                }
+
+                ui.separator();
+
+                let can_export =
+                    self.selected_model_index.is_some() && self.app_state == AppState::Ready;
+
+                ui.add_enabled_ui(can_export, |ui| {
+                    if ui.button("Export GLB...").clicked() {
+                        self.show_export_dialog();
+                    }
+                });
+
+                if self.selected_model_index.is_some()
+                    && self.app_state == AppState::Ready
+                    && ui.button("Refresh Preview").clicked()
+                {
                     self.spawn_preview(world);
                 }
-            }
 
-            if !self.loaded_animations.is_empty() {
-                ui.separator();
-                ui.heading("Animations");
-                ui.checkbox(&mut self.strip_root_motion, "Strip Root Motion");
-
-                ui.horizontal(|ui| {
-                    if ui.button("Select All").clicked() {
-                        for file_info in &mut self.fbx_files {
-                            if !file_info.is_model {
-                                file_info.selected = true;
-                            }
-                        }
-                    }
-                    if ui.button("Select None").clicked() {
-                        for file_info in &mut self.fbx_files {
-                            if !file_info.is_model {
-                                file_info.selected = false;
-                            }
-                        }
-                    }
-                });
-
-                egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
-                    for file_info in &mut self.fbx_files {
-                        if !file_info.is_model {
-                            ui.checkbox(&mut file_info.selected, &file_info.name);
-                        }
-                    }
-                });
-            }
-
-            ui.separator();
-
-            let can_export = self.selected_model_index.is_some()
-                && self.app_state == AppState::Ready;
-
-            ui.add_enabled_ui(can_export, |ui| {
-                if ui.button("Export GLB...").clicked() {
-                    self.show_export_dialog();
+                if self.exported_glb_path.is_some()
+                    && self.app_state == AppState::Ready
+                    && ui.button("Load Exported GLB").clicked()
+                {
+                    self.load_exported_glb(world);
                 }
             });
 
-            if self.selected_model_index.is_some() && self.app_state == AppState::Ready
-                && ui.button("Refresh Preview").clicked()
-            {
-                self.spawn_preview(world);
-            }
-
-            if self.exported_glb_path.is_some() && self.app_state == AppState::Ready
-                && ui.button("Load Exported GLB").clicked()
-            {
-                self.load_exported_glb(world);
-            }
-        });
-
-        egui::TopBottomPanel::bottom("console_panel").min_height(120.0).show(ui_context, |ui| {
-            ui.heading("Console");
-            egui::ScrollArea::vertical()
-                .stick_to_bottom(true)
-                .show(ui, |ui| {
-                    for entry in &self.console_log {
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                egui::RichText::new(&entry.timestamp)
-                                    .color(egui::Color32::GRAY)
-                                    .monospace(),
-                            );
-                            ui.label(&entry.message);
-                        });
-                    }
-                });
-        });
+        egui::TopBottomPanel::bottom("console_panel")
+            .min_height(120.0)
+            .show(ui_context, |ui| {
+                ui.heading("Console");
+                egui::ScrollArea::vertical()
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        for entry in &self.console_log {
+                            ui.horizontal(|ui| {
+                                ui.label(
+                                    egui::RichText::new(&entry.timestamp)
+                                        .color(egui::Color32::GRAY)
+                                        .monospace(),
+                                );
+                                ui.label(&entry.message);
+                            });
+                        }
+                    });
+            });
     }
 
     fn run_systems(&mut self, world: &mut World) {

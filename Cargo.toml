@@ -5,10 +5,11 @@ license = "MIT OR Apache-2.0"
 edition = "2024"
 
 [dependencies]
-nightshade = { path = "../nightshade/crates/nightshade", features = ["egui", "fbx", "tracing"] }
+nightshade = { git = "https://github.com/matthewjberger/nightshade", features = ["egui", "fbx", "tracing"] }
 rfd = "0.15"
 zip = "2.2"
 chrono = "0.4"
 gltf = "1.4"
 gltf-json = "1.4"
 walkdir = "2.5"
+image = "0.25"
