@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+const FBX_TO_GLTF_SCALE: f32 = 0.01;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
 
@@ -415,9 +417,9 @@ impl CliConverter {
                 child_gltf_indices,
                 name: prefab_node.components.name.as_ref().map(|n| n.0.clone()),
                 translation: [
-                    prefab_node.local_transform.translation.x,
-                    prefab_node.local_transform.translation.y,
-                    prefab_node.local_transform.translation.z,
+                    prefab_node.local_transform.translation.x * FBX_TO_GLTF_SCALE,
+                    prefab_node.local_transform.translation.y * FBX_TO_GLTF_SCALE,
+                    prefab_node.local_transform.translation.z * FBX_TO_GLTF_SCALE,
                 ],
                 rotation: [
                     prefab_node.local_transform.rotation.i,
@@ -631,7 +633,13 @@ impl CliConverter {
             for ibm in &skin.inverse_bind_matrices {
                 for col in 0..4 {
                     for row in 0..4 {
-                        buffer_data.extend_from_slice(&ibm[(row, col)].to_le_bytes());
+                        let value = ibm[(row, col)];
+                        let scaled_value = if col == 3 && row < 3 {
+                            value * FBX_TO_GLTF_SCALE
+                        } else {
+                            value
+                        };
+                        buffer_data.extend_from_slice(&scaled_value.to_le_bytes());
                     }
                 }
             }
@@ -734,22 +742,32 @@ impl CliConverter {
 
             if let Some(sd) = skinned_data {
                 for vertex in &sd.skinned_vertices {
-                    buffer_data.extend_from_slice(&vertex.position[0].to_le_bytes());
-                    buffer_data.extend_from_slice(&vertex.position[1].to_le_bytes());
-                    buffer_data.extend_from_slice(&vertex.position[2].to_le_bytes());
+                    let scaled_pos = [
+                        vertex.position[0] * FBX_TO_GLTF_SCALE,
+                        vertex.position[1] * FBX_TO_GLTF_SCALE,
+                        vertex.position[2] * FBX_TO_GLTF_SCALE,
+                    ];
+                    buffer_data.extend_from_slice(&scaled_pos[0].to_le_bytes());
+                    buffer_data.extend_from_slice(&scaled_pos[1].to_le_bytes());
+                    buffer_data.extend_from_slice(&scaled_pos[2].to_le_bytes());
                     for idx in 0..3 {
-                        min_pos[idx] = min_pos[idx].min(vertex.position[idx]);
-                        max_pos[idx] = max_pos[idx].max(vertex.position[idx]);
+                        min_pos[idx] = min_pos[idx].min(scaled_pos[idx]);
+                        max_pos[idx] = max_pos[idx].max(scaled_pos[idx]);
                     }
                 }
             } else if let Some(verts) = vertices_to_use {
                 for vertex in verts {
-                    buffer_data.extend_from_slice(&vertex.position[0].to_le_bytes());
-                    buffer_data.extend_from_slice(&vertex.position[1].to_le_bytes());
-                    buffer_data.extend_from_slice(&vertex.position[2].to_le_bytes());
+                    let scaled_pos = [
+                        vertex.position[0] * FBX_TO_GLTF_SCALE,
+                        vertex.position[1] * FBX_TO_GLTF_SCALE,
+                        vertex.position[2] * FBX_TO_GLTF_SCALE,
+                    ];
+                    buffer_data.extend_from_slice(&scaled_pos[0].to_le_bytes());
+                    buffer_data.extend_from_slice(&scaled_pos[1].to_le_bytes());
+                    buffer_data.extend_from_slice(&scaled_pos[2].to_le_bytes());
                     for idx in 0..3 {
-                        min_pos[idx] = min_pos[idx].min(vertex.position[idx]);
-                        max_pos[idx] = max_pos[idx].max(vertex.position[idx]);
+                        min_pos[idx] = min_pos[idx].min(scaled_pos[idx]);
+                        max_pos[idx] = max_pos[idx].max(scaled_pos[idx]);
                     }
                 }
             }
@@ -1146,9 +1164,9 @@ impl CliConverter {
                     match (&channel.target_property, &channel.sampler.output) {
                         (AnimationProperty::Translation, AnimationSamplerOutput::Vec3(values)) => {
                             for v in values {
-                                buffer_data.extend_from_slice(&v.x.to_le_bytes());
-                                buffer_data.extend_from_slice(&v.y.to_le_bytes());
-                                buffer_data.extend_from_slice(&v.z.to_le_bytes());
+                                buffer_data.extend_from_slice(&(v.x * FBX_TO_GLTF_SCALE).to_le_bytes());
+                                buffer_data.extend_from_slice(&(v.y * FBX_TO_GLTF_SCALE).to_le_bytes());
+                                buffer_data.extend_from_slice(&(v.z * FBX_TO_GLTF_SCALE).to_le_bytes());
                             }
                             (
                                 json::accessor::Type::Vec3,
@@ -1952,11 +1970,6 @@ impl MixamoConverter {
                         &result.skins,
                         Vec3::zeros(),
                     );
-
-                    if let Some(transform) = world.get_local_transform_mut(entity) {
-                        transform.scale = Vec3::new(0.01, 0.01, 0.01);
-                    }
-                    world.mark_local_transform_dirty(entity);
 
                     if let Some(player) = world.get_animation_player_mut(entity)
                         && !player.clips.is_empty()
